@@ -1,5 +1,37 @@
 const express = require('express')
 const app = express()
+const morgan = require('morgan')
+
+app.use(
+  morgan((tokens, req, res) => {
+    // Verifica si es una solicitud POST a /api/persons
+    if (req.method === 'POST' && req.url === '/api/persons') {
+      // Si es así, agrega el cuerpo de la solicitud a la salida
+      return [
+        tokens.method(req, res),
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens.res(req, res, 'content-length'),
+        '-',
+        tokens['response-time'](req, res),
+        'ms',
+        JSON.stringify(req.body), // Agrega el cuerpo de la solicitud como JSON
+      ].join(' ')
+    } else {
+      // De lo contrario, sigue el formato original sin el cuerpo de la solicitud
+      return [
+        tokens.method(req, res),
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens.res(req, res, 'content-length'),
+        '-',
+        tokens['response-time'](req, res),
+        'ms',
+      ].join(' ')
+    }
+  })
+)
+
 app.use(express.json())
 
 let phonebook = [
@@ -70,6 +102,12 @@ app.post('/api/persons', (req, res) => {
 
   res.json(newPerson)
 })
+
+const unknownEndpoint = (req, res) => {
+  res.status(404).json({ error: 'Unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
 
 const PORT = 3001
 app.listen(PORT, () => {
