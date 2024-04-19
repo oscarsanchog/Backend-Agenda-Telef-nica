@@ -1,38 +1,42 @@
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
+const cors = require('cors')
 
-app.use(
-  morgan((tokens, req, res) => {
-    // Verifica si es una solicitud POST a /api/persons
-    if (req.method === 'POST' && req.url === '/api/persons') {
-      // Si es así, agrega el cuerpo de la solicitud a la salida
-      return [
-        tokens.method(req, res),
-        tokens.url(req, res),
-        tokens.status(req, res),
-        tokens.res(req, res, 'content-length'),
-        '-',
-        tokens['response-time'](req, res),
-        'ms',
-        JSON.stringify(req.body), // Agrega el cuerpo de la solicitud como JSON
-      ].join(' ')
-    } else {
-      // De lo contrario, sigue el formato original sin el cuerpo de la solicitud
-      return [
-        tokens.method(req, res),
-        tokens.url(req, res),
-        tokens.status(req, res),
-        tokens.res(req, res, 'content-length'),
-        '-',
-        tokens['response-time'](req, res),
-        'ms',
-      ].join(' ')
-    }
-  })
-)
+app
+  .use(
+    morgan((tokens, req, res) => {
+      // Verifica si es una solicitud POST a /api/persons
+      if (req.method === 'POST' && req.url === '/api/persons') {
+        // Si es así, agrega el cuerpo de la solicitud a la salida
+        return [
+          tokens.method(req, res),
+          tokens.url(req, res),
+          tokens.status(req, res),
+          tokens.res(req, res, 'content-length'),
+          '-',
+          tokens['response-time'](req, res),
+          'ms',
+          JSON.stringify(req.body), // Agrega el cuerpo de la solicitud como JSON
+        ].join(' ')
+      } else {
+        // De lo contrario, sigue el formato original sin el cuerpo de la solicitud
+        return [
+          tokens.method(req, res),
+          tokens.url(req, res),
+          tokens.status(req, res),
+          tokens.res(req, res, 'content-length'),
+          '-',
+          tokens['response-time'](req, res),
+          'ms',
+        ].join(' ')
+      }
+    })
+  )
+  .use(express.json())
+  .use(cors())
 
-app.use(express.json())
+
 
 let phonebook = [
   {
@@ -109,7 +113,7 @@ const unknownEndpoint = (req, res) => {
 
 app.use(unknownEndpoint)
 
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
