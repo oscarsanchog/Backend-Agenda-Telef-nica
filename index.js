@@ -35,6 +35,7 @@ app
   )
   .use(express.json())
   .use(cors())
+  .use(express.static('dist'))
 
 
 
