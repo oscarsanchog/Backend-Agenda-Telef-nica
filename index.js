@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./mongo')
 
 app
   .use(
@@ -61,7 +62,8 @@ let phonebook = [
 ]
 
 app.get('/api/persons', (req, res) => {
-  res.json(phonebook)
+  Person.find({}).then(result => res.json(result))
+  //res.json(phonebook)
 })
 
 app.get('/info', (req, res) => {
