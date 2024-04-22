@@ -5,8 +5,10 @@ const cors = require('cors')
 const Person = require('./models/person')
 require('dotenv').config()
 
-
 app
+  .use(express.static('dist'))
+  .use(express.json())
+  .use(cors())
   .use(
     morgan((tokens, req, res) => {
       // Verifica si es una solicitud POST a /api/persons
@@ -36,9 +38,6 @@ app
       }
     })
   )
-  .use(express.json())
-  .use(cors())
-  .use(express.static('dist'))
 
 let phonebook = [
   {
@@ -64,7 +63,7 @@ let phonebook = [
 ]
 
 app.get('/api/persons', (req, res) => {
-  Person.find({}).then(result => res.json(result))
+  Person.find({}).then((result) => res.json(result))
   //res.json(phonebook)
 })
 
@@ -75,47 +74,68 @@ app.get('/info', (req, res) => {
   )
 })
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
   const { id } = req.params
-  const person = phonebook.find((person) => person.id === Number(id))
+  Person.findById(id)
+    .then((note) => {
+      note
+        ? res.json(note)
+        : res.status(404).json({ message: 'Person not found' })
+    })
+    .catch((error) => {
+      next(error)
+      /* console.error(error)
+      res.status(400).send({ error: 'Malformatted id' }) */
+    })
+  /* const person = phonebook.find((person) => person.id === Number(id))
   if (!person) return res.status(404).json({ message: 'Not found' })
-  res.json(person)
+  res.json(person) */
 })
 
 app.delete('/api/persons/:id', (req, res) => {
   const { id } = req.params
   phonebook = phonebook.filter((person) => person.id != id)
-  
+
   res.status(204).end()
 })
 
 app.post('/api/persons', (req, res) => {
   const personInfo = req.body
-  const repeatedName = phonebook.find(
+  /* const repeatedName = phonebook.find(
     (person) => person.name === personInfo.name
-  )
+  ) */
+  /* const repeatedName = Person.findOne({ name: personInfo.name }, (err, document) => {
+    if(err) return err
+    else return document
+  }) */
 
   if (!personInfo.name || !personInfo.number)
     return res.status(404).json({ message: 'Data is missing' })
-  if (repeatedName)
-    return res.status(404).json({ message: 'That person already exists' })
+  /* if (repeatedName)
+    return res.status(404).json({ message: 'That person already exists' }) */
 
-  const newPerson = {
-    id: crypto.randomUUID(),
+  const person = new Person({
     name: personInfo.name,
     number: personInfo.number,
-  }
+  })
 
-  phonebook.push(newPerson)
-
-  res.json(newPerson)
+  person.save().then((savedNote) => {
+    res.json(savedNote)
+  })
 })
 
 const unknownEndpoint = (req, res) => {
   res.status(404).json({ error: 'Unknown endpoint' })
 }
 
-app.use(unknownEndpoint)
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message)
+  if (error.name === 'CastError')
+    return res.status(400).json({ message: 'Malformatted id' })
+  next(error)
+}
+
+app.use(unknownEndpoint).use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
