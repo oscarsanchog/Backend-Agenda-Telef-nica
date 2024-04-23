@@ -85,12 +85,7 @@ app.get('/api/persons/:id', (req, res, next) => {
     })
     .catch((error) => {
       next(error)
-      /* console.error(error)
-      res.status(400).send({ error: 'Malformatted id' }) */
     })
-  /* const person = phonebook.find((person) => person.id === Number(id))
-  if (!person) return res.status(404).json({ message: 'Not found' })
-  res.json(person) */
 })
 
 app.delete('/api/persons/:id', (req, res, next) => {
@@ -99,7 +94,7 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .then((result) => {
       console.log('result =>', result)
       if (!result)
-        res.status(409).json({ result: result, message: 'Person not found' })
+        res.status(409).json({ message: 'Person not found, please reload.' })
       else res.status(204).end()
     })
     .catch((error) => next(error))
@@ -107,18 +102,9 @@ app.delete('/api/persons/:id', (req, res, next) => {
 
 app.post('/api/persons', (req, res) => {
   const personInfo = req.body
-  /* const repeatedName = phonebook.find(
-    (person) => person.name === personInfo.name
-  ) */
-  /* const repeatedName = Person.findOne({ name: personInfo.name }, (err, document) => {
-    if(err) return err
-    else return document
-  }) */
 
   if (!personInfo.name || !personInfo.number)
     return res.status(404).json({ message: 'Data is missing' })
-  /* if (repeatedName)
-    return res.status(404).json({ message: 'That person already exists' }) */
 
   const person = new Person({
     name: personInfo.name,
@@ -130,12 +116,26 @@ app.post('/api/persons', (req, res) => {
   })
 })
 
+app.put('/api/persons/:id', (req, res, next) => {
+  const { body } = req
+  const { id } = req.params
+
+  const updatingPerson = {
+    name: body.name,
+    number: body.number,
+  }
+
+  Person.findByIdAndUpdate(id, updatingPerson, { new: true })
+    .then((updatedNote) => res.json(updatedNote))
+    .catch((error) => next(error))
+})
+
 const unknownEndpoint = (req, res) => {
   res.status(404).json({ error: 'Unknown endpoint' })
 }
 
 const errorHandler = (error, req, res, next) => {
-  console.error(error.message)
+  console.error('Error handler:', error.message)
   if (error.name === 'CastError')
     return res.status(400).json({ message: 'Malformatted id' })
   next(error)
