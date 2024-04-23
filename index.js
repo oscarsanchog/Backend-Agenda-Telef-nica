@@ -1,9 +1,10 @@
 const express = require('express')
 const app = express()
+require('dotenv').config()
 const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
-require('dotenv').config()
+const PORT = process.env.PORT
 
 app
   .use(express.static('dist'))
@@ -92,11 +93,16 @@ app.get('/api/persons/:id', (req, res, next) => {
   res.json(person) */
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
   const { id } = req.params
-  phonebook = phonebook.filter((person) => person.id != id)
-
-  res.status(204).end()
+  Person.findByIdAndDelete(id)
+    .then((result) => {
+      console.log('result =>', result)
+      if (!result)
+        res.status(409).json({ result: result, message: 'Person not found' })
+      else res.status(204).end()
+    })
+    .catch((error) => next(error))
 })
 
 app.post('/api/persons', (req, res) => {
@@ -137,7 +143,6 @@ const errorHandler = (error, req, res, next) => {
 
 app.use(unknownEndpoint).use(errorHandler)
 
-const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
