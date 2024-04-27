@@ -84,32 +84,39 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch((error) => next(error))
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const personInfo = req.body
 
-  if (!personInfo.name || !personInfo.number)
-    return res.status(404).json({ message: 'Data is missing' })
+  /* if (!personInfo.name || !personInfo.number)
+    return res.status(404).json({ message: 'Data is missing' }) */
 
   const person = new Person({
     name: personInfo.name,
     number: personInfo.number,
   })
 
-  person.save().then((savedNote) => {
-    res.json(savedNote)
-  })
+  person
+    .save()
+    .then((savedNote) => {
+      res.json(savedNote)
+    })
+    .catch((error) => next(error))
 })
 
 app.put('/api/persons/:id', (req, res, next) => {
-  const { body } = req
+  const { name, number } = req.body
   const { id } = req.params
 
   const updatingPerson = {
-    name: body.name,
-    number: body.number,
+    name: name,
+    number: number,
   }
 
-  Person.findByIdAndUpdate(id, updatingPerson, { new: true }) // Agregamos el parámetro opcional { new: true }, que hará que nuestro controlador de eventos sea llamado con el nuevo documento modificado en lugar del original.
+  Person.findByIdAndUpdate(id, updatingPerson, {
+    new: true,
+    runValidators: true,
+    context: 'query',
+  }) // Agregamos el parámetro opcional { new: true }, que hará que nuestro controlador de eventos sea llamado con el nuevo documento modificado en lugar del original. run validators es para que corran las validaciones; no es por defecto.
     .then((updatedNote) => res.json(updatedNote))
     .catch((error) => next(error))
 })
@@ -120,13 +127,18 @@ const unknownEndpoint = (req, res) => {
 
 const errorHandler = (error, req, res, next) => {
   console.error('Error handler:', error.message)
+
   if (error.name === 'CastError')
     return res.status(400).json({ message: 'Malformatted id' })
+  if (error.name == 'ValidationError')
+    return res.status(400).json({ error: error.message })
+
   next(error)
 }
 
-app.use(unknownEndpoint).use(errorHandler)
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+app
+  .use(unknownEndpoint)
+  .use(errorHandler)
+  .listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+  })
